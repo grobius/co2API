@@ -1,0 +1,156 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Set_CityPair": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "CityPair",
+                            "type": "string",
+                            "value": "@triggerBody()?['cityPair']"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "Set_punchAmount": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "punchAmount",
+                            "type": "integer",
+                            "value": "@triggerBody()?['punches']"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Set_CityPair": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "checkValid_input": {
+                "actions": {
+                    "Format_response": {
+                        "inputs": {
+                            "name": "responseBody",
+                            "value": "{\n\"amount\": @{mul(outputs('Get_co2_data')?['body']?['CO2_per_pax'],variables('punchAmount'))} ,\n\"unit\": \"kg\"\n}"
+                        },
+                        "runAfter": {
+                            "Get_co2_data": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    },
+                    "Get_co2_data": {
+                        "inputs": {
+                            "parameters": {
+                                "partitionKey": "@variables('CityPair')",
+                                "rowKey": "CO2PAX",
+                                "select": [
+                                    "CO2_per_pax"
+                                ],
+                                "tableName": "co2data"
+                            },
+                            "serviceProviderConfiguration": {
+                                "connectionName": "azureTables-6",
+                                "operationId": "getEntity",
+                                "serviceProviderId": "/serviceProviders/azureTables"
+                            }
+                        },
+                        "runAfter": {},
+                        "type": "ServiceProvider"
+                    },
+                    "successResponse": {
+                        "inputs": {
+                            "body": "@variables('responseBody')",
+                            "statusCode": 200
+                        },
+                        "kind": "http",
+                        "runAfter": {
+                            "Format_response": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Response"
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "errorResponse": {
+                            "inputs": {
+                                "body": "@variables('responseBody')",
+                                "statusCode": 200
+                            },
+                            "kind": "http",
+                            "runAfter": {},
+                            "type": "Response"
+                        }
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "greater": [
+                                "@variables('punchAmount')",
+                                0
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "responseBody": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "responseBody": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "responseBody",
+                            "type": "string",
+                            "value": "Error. Wrong or missing parameters. Format should be {\"cityPair\":\"XXXYYY\",\"punches\": number}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Set_punchAmount": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "correlation": {
+                    "clientTrackingId": "1"
+                },
+                "inputs": {
+                    "schema": {
+                        "properties": {
+                            "cityPair": {
+                                "type": "string"
+                            },
+                            "punches": {
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}
