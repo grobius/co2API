@@ -41,4 +41,4 @@ jobs:
           app-name: 'getCorpCo2Data'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_F87D6BE2E5CE4AC8B9FA9509FE6FF12D }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D7F1D2FC47424622A84D5514E2EDA781 }}
